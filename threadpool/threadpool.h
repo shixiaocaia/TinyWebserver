@@ -22,19 +22,19 @@ private:
     void ThreadRun();
 
 private:
-    int thread_number;         // 线程的数量
-    int max_requests;          // 最大请求数
-    pthread_t *threads;        // 描述线程池的数组，大小为thread_number_;
-    std::list<T *> workqueue;  // 请求队列
-    Locker queuelocker;        // 保护请求队列的线程锁
-    Sem queuestat;             // 用信号量表明还有多少任务未处理
-    bool stop;                 // 判断结束线程
-    int event_flag             // 0 读事件， 1 写事件
+    int m_thread_number;         // 线程的数量
+    int m_max_requests;          // 最大请求数
+    pthread_t *m_threads;        // 描述线程池的数组，大小为thread_number_;
+    std::list<T *> m_workqueue;  // 请求队列
+    Locker m_queuelocker;        // 保护请求队列的线程锁
+    Sem m_queuestat;             // 用信号量表明还有多少任务未处理
+    bool m_stop;                 // 判断结束线程
+    //int m_event_flag           // 0 读事件， 1 写事件，这里现车
 };
 
 template<typename T>
 ThreadPool<T>::ThreadPool(int thread_number, int max_requests): 
-thread_number(thread_number), max_requests(max_requests),
+m_thread_number(thread_number), m_max_requests(max_requests),
 stop(false), threads(NULL)
 {
     //抛出异常
@@ -44,25 +44,114 @@ stop(false), threads(NULL)
     }
 
     //申请线程池数组
-    threads = new pthread_t[thread_number];
-    if(!threads)
+    m_threads = new pthread_t[thread_number];
+    if(!m_threads)
         throw std::exception();
 
     //创建thread_number个线程，并设置线程分离
     for (int i = 0; i < thread_number; i++){
-        if(pthread_create(thread + i, NULL, ThreadWorkFunc, this))
+        if(pthread_create(m_thread + i, NULL, ThreadWorkFunc, this))
         {
-            delete[] threads;
+            delete[] m_threads;
             throw std::exception();
         }
 
-        //设置线程为脱离态
-        if(pthread_detach(threads[i])){
-            delete[] threads;
+        //设置线程分离，不需要单独对工作线程进行回收
+        if(pthread_detach(m_threads[i])){
+            delete[] m_threads;
             throw std::exception();
         }
     }
 
 }
 
+template<typename T>
+bool ThreadPool<T>::Append(T *request, int event)
+{
+    //m_event_flag = event;
+
+    // 操作工作队列时一定要加锁，因为它被所有线程共享。
+    m_queuelocker.lock();
+
+    // Problem: 读写事件类型的标注
+
+    // 判定是否超过请求队列的最大数
+    if(m_workqueue.size() > m_max_requests)
+    {
+        m_queuelocker.unlock();
+        return false;
+    }
+
+    m_workqueue.push(request);
+    m_queuelocker.unlock();
+
+    // 信号量提醒有任务未处理,唤醒m_queestat.wait()的线程
+    m_queuestat.post();
+    return true;
+}
+
+template<typename T>
+void* ThreadPool<T>::ThreadWorkFunc(void *arg)
+{
+    ThreadPool *pool = (ThreadPool *)arg;
+
+    //线程池运行函数
+    pool->ThreadRun();
+    return pool;
+}
+
+template<typename T>
+void ThreadPool<T>::ThreadRun()
+{
+    while(!m_stop())
+    {
+        //等待信号量
+        m_queuestat.wait();
+        //访问请求队列(公共区域)上锁
+        m_queuelocker.lock();
+
+        if(m_workqueue.empty())
+        {
+            m_queuelocker.unlock();
+            continue;
+        }
+
+        //取出队列前面的任务
+        T *request = m_workqueue.front();
+        m_workqueue.pop_front();
+        m_queuelocker.unlock();
+        if(!request)
+        {
+            continue;
+        }
+        
+        //TODO: 默认当作proactor模式
+        if(T->m_state == 0)
+        {
+            if(request->ReadOnce())
+            {
+                request->Process();
+                request->event_finish = 1;
+            }
+            else
+            {
+                //读取失败
+                request->timer_flag = 1;
+                request->event_finish = 1;
+            }
+        }
+        else if(T->m_state == 1)
+        {
+            if(request->Write())
+            {
+                request->event_finish = 1;
+            }
+            else{
+                request->timer_flag = 1;
+                request->event_finish = 1;
+            }
+        }
+
+    }
+}
 #endif
