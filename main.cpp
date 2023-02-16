@@ -1,21 +1,26 @@
-#include<stdio>
-
-
+#include "./Webserver/webserver.h"
 
 
 
 
 int main(int argc, char *argv[])
 {
-    //命令行解析
-    
+    if(argc < 2)
+    {
+        perror("Usage: ./server port\n");
+    }
 
-    //初始化
+    int port = atoi(argv[1]);
 
+    int thread_nums = 8;
+    int max_queue_nums = 10000;
 
-    //线程池
+    //创建线程池
 
-    
+    //监听事件
+
+    //事件循环
+
 
     return 0;
 }
