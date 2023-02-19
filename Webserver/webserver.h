@@ -20,9 +20,9 @@
 #include "../http/httpconn.h"
 #include "../utils/utils.h"
 
-const int MAX_THREAD_NUMBER = 10;
-const int MAX_EVENT_NUMBER = 10000;
-
+const int MAX_THREAD_NUMBER = 10;       //线程池中线程数量
+const int MAX_EVENT_NUMBER = 10000;     //请求队列中的最大数
+const int MAX_FD_NUMBER = 65536;        //最大的连接数/文件描述符数
 
 class Webserver
 {
@@ -35,8 +35,8 @@ public:
 //初始化部分
 public:
     void CreateThreadPool();      //创建线程池
-    
-
+    void ListenEvents();          //开启事件循环监听
+    void LoopEvent();             //开启事件循环
 
 public:
     int m_port;                   //端口
