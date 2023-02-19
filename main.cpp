@@ -15,12 +15,14 @@ int main(int argc, char *argv[])
     int thread_nums = 8;
     int max_queue_nums = 10000;
 
-    //创建线程池
+    Webserver server(port, thread_nums, max_queue_nums);
+
+    // 创建线程池
+    server.CreateThreadPool();
 
     //监听事件
 
     //事件循环
-
 
     return 0;
 }
