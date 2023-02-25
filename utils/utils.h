@@ -10,8 +10,8 @@
 class Utils
 {
 public:
-    Utils();
-    ~Utils();
+    Utils() {}
+    ~Utils() {}
 
     //设置非阻塞函数
     int SetNonblocking(int fd);

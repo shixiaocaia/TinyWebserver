@@ -39,6 +39,13 @@ public:
     void LoopEvent();             //开启事件循环
 
 public:
+    //事件循环针对不同事件的处理函数
+    bool DealClientData();          //处理客户端连接事件
+    bool DealWithSignal();          //处理信号事件
+    void DealWithRead(int sockfd);  //处理读事件
+    void DealWithWrite(int sockfd); //处理写事件
+
+public:
     int m_port;                   //端口
     int m_epollfd;                //epoll句柄
     int listenfd;                 //监听描述符

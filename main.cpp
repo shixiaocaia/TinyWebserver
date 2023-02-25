@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
     server.CreateThreadPool();
 
     //监听事件
+    server.ListenEvents();
 
     //事件循环
 

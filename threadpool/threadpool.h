@@ -4,7 +4,10 @@
 #include <pthread.h>
 #include <cstdio>
 #include <exception>
+#include <list>
+
 #include "../lock/locker.h"
+#include "../http/httpconn.h"
 
 template <typename T>
 class ThreadPool
@@ -29,10 +32,10 @@ private:
     Locker m_queuelocker;        // 保护请求队列的线程锁
     Sem m_queuestat;             // 用信号量表明还有多少任务未处理
     bool m_stop;                 // 判断结束线程
-    //int m_event_flag           // 0 读事件， 1 写事件，这里现车
+    int m_event_flag;            // 0 读事件， 1 写事件
 };
 
-template<typename T>
+template <typename T>
 ThreadPool<T>::ThreadPool(int thread_number, int max_requests): 
 m_thread_number(thread_number), m_max_requests(max_requests),
 stop(false), threads(NULL)
@@ -66,9 +69,16 @@ stop(false), threads(NULL)
 }
 
 template<typename T>
+ThreadPool<T>::~ThreadPool(){
+    delete m_threads;
+    m_stop = true;
+}
+
+
+template<typename T>
 bool ThreadPool<T>::Append(T *request, int event)
 {
-    //m_event_flag = event;
+    m_event_flag = event;
 
     // 操作工作队列时一定要加锁，因为它被所有线程共享。
     m_queuelocker.lock();
@@ -126,7 +136,7 @@ void ThreadPool<T>::ThreadRun()
         }
         
         //TODO: 默认当作proactor模式
-        if(T->m_state == 0)
+        if(m_event_flag == 0)
         {
             if(request->ReadOnce())
             {
@@ -136,18 +146,18 @@ void ThreadPool<T>::ThreadRun()
             else
             {
                 //读取失败
-                request->timer_flag = 1;
+                //request->timer_flag = 1;
                 request->event_finish = 1;
             }
         }
-        else if(T->m_state == 1)
+        else if(m_event_flag == 1)
         {
             if(request->Write())
             {
                 request->event_finish = 1;
             }
             else{
-                request->timer_flag = 1;
+                //request->timer_flag = 1;
                 request->event_finish = 1;
             }
         }

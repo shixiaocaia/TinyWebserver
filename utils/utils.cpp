@@ -28,3 +28,15 @@ void Utils::AddFd(int epollfd, int fd, bool one_shot)
     //设置文件操作符非阻塞
     SetNonblocking(fd);
 }
+
+void Utils::RemovedFd(int epollfd, int fd){
+    epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, 0);
+    close(fd);
+}
+
+void Utils::ModFd(int epollfd, int fd, int ev){
+    epoll_event event;
+    event.data.fd = fd;
+    event.events = ev | EPOLLET | EPOLLONESHOT | EPOLLRDHUP;
+    epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &event);
+}
