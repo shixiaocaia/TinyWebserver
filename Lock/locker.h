@@ -57,10 +57,7 @@ public:
 
     ~Sem()
     {
-        if(sem_destroy(&m_sem))
-        {
-            throw std::exception();
-        }
+        sem_destroy(&m_sem);
     }
 
     bool wait()

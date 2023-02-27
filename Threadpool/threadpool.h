@@ -5,9 +5,10 @@
 #include <cstdio>
 #include <exception>
 #include <list>
+#include <semaphore.h>
 
-#include "../lock/locker.h"
-#include "../http/httpconn.h"
+#include "../Lock/locker.h"
+#include "../Http/httpconn.h"
 
 template <typename T>
 class ThreadPool
@@ -38,7 +39,7 @@ private:
 template <typename T>
 ThreadPool<T>::ThreadPool(int thread_number, int max_requests): 
 m_thread_number(thread_number), m_max_requests(max_requests),
-stop(false), threads(NULL)
+m_threads(NULL), m_stop(false)
 {
     //抛出异常
     if(thread_number <= 0 || max_requests <= 0)
@@ -53,7 +54,7 @@ stop(false), threads(NULL)
 
     //创建thread_number个线程，并设置线程分离
     for (int i = 0; i < thread_number; i++){
-        if(pthread_create(m_thread + i, NULL, ThreadWorkFunc, this))
+        if(pthread_create(m_threads + i, NULL, ThreadWorkFunc, this))
         {
             delete[] m_threads;
             throw std::exception();
@@ -92,7 +93,7 @@ bool ThreadPool<T>::Append(T *request, int event)
         return false;
     }
 
-    m_workqueue.push(request);
+    m_workqueue.push_back(request);
     m_queuelocker.unlock();
 
     // 信号量提醒有任务未处理,唤醒m_queestat.wait()的线程
@@ -113,7 +114,7 @@ void* ThreadPool<T>::ThreadWorkFunc(void *arg)
 template<typename T>
 void ThreadPool<T>::ThreadRun()
 {
-    while(!m_stop())
+    while(!m_stop)
     {
         //等待信号量
         m_queuestat.wait();

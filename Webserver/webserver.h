@@ -3,9 +3,10 @@
 
 
 #include <cstdio>
+#include <cstdio>
 #include <signal.h>
 #include <unistd.h>
-#include <sys/types.h>
+#include <sys/types.h>         
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -13,12 +14,11 @@
 #include <strings.h>
 #include <assert.h>
 #include <errno.h>
-#include <stdlib.h>
 
-#include "../lock/locker.h"
-#include "../threadpool/threadpool.h"
-#include "../http/httpconn.h"
-#include "../utils/utils.h"
+#include "../Lock/locker.h"
+#include "../Threadpool/threadpool.h"
+#include "../Http/httpconn.h"
+#include "../Utils/utils.h"
 
 const int MAX_THREAD_NUMBER = 10;       //线程池中线程数量
 const int MAX_EVENT_NUMBER = 10000;     //请求队列中的最大数

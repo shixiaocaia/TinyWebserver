@@ -1,5 +1,5 @@
-#ifndef HTTPCONN_H
-#define HTTPCONN_H
+#ifndef HTTP_CONN_H
+#define HTTP_CONN_H
 
 
 #include <unistd.h>
@@ -25,7 +25,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include "../utils/utils.h"
+#include "../Utils/utils.h"
 
 class HttpConn
 {
@@ -65,7 +65,7 @@ public:
     enum CHECK_STATE
     {
         CHECK_STATE_REQUESTLINE = 0,            //检查请求行
-        CHECK_STATE_HEAD,                       //检查请求头
+        CHECK_STATE_HEADER,                       //检查请求头
         CHECK_STATE_CONTENT                     //检查请求体
     };
 
@@ -132,12 +132,12 @@ private:
 
     //存储发出的响应报文数据    
     char m_write_buf[WRITE_BUFFER_SIZE];  
-    int m_write_idx_;           //buffer长度
+    int m_write_idx;           //buffer长度
     CHECK_STATE m_check_state; //主状态机状态
     METHOD m_method;           //请求方法
 
     struct stat m_file_stat;   //文件属性
-    char *file_address_;      //内存映射区 
+    char *file_address;      //内存映射区 
 
     struct iovec m_iv_[2];      //io向量机制iovec
     int m_iv_count;            //发送部分数

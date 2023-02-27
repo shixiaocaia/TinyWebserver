@@ -5,7 +5,7 @@ m_port(port), m_thread_nums(thread_nums), m_max_queue_nums(max_queue_nums)
 {
     // Problem: 这个users定义
     users = new HttpConn[MAX_FD_NUMBER];
-
+    //printf("complete new port\n");
 }
 
 Webserver::~Webserver()
@@ -23,9 +23,9 @@ void Webserver::CreateThreadPool()
 
 void Webserver::ListenEvents()
 {
-    m_utils.Addsig(SIGPIPE, SIG_IGN);               //避免进程结束
-    m_utils.Addsig(SIGALRM, m_utils.SigHandler);    //设置信号捕捉函数
-    m_utils.Addsig(SIGTERM, m_utils.SigHandler);    //设置信号捕捉函数
+    m_utils.AddSig(SIGPIPE, SIG_IGN);               //避免进程结束
+    //m_utils.Addsig(SIGALRM, m_utils.SigHandler);    //设置信号捕捉函数
+   //m_utils.Addsig(SIGTERM, m_utils.SigHandler);    //设置信号捕捉函数
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);     //监听描述符
     assert(listenfd != -1);
@@ -57,7 +57,7 @@ void Webserver::ListenEvents()
     m_utils.AddFd(m_epollfd, listenfd, false);
 
     //Problem:
-       Utils::m_epollfd = m_epollfd;
+    Utils::m_epollfd = m_epollfd;
     
 
 }
@@ -77,13 +77,14 @@ void Webserver::LoopEvent()
 
             //listenfd监听到新的客户端申请
             if(sockfd == listenfd){
+                
                 bool flag = DealClientData();
                 if(false == flag)
                     continue;
             }
             
             //异常事件
-            else if(m_events[i].events && (EPOLLRDHUP || EPOLLHUP || EPOLLERR)){
+            else if(m_events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)){
                 //epoll_ctl(Utils::m_epollfd, EPOLL_CTL_DEL, m_events[i].data.fd, 0);
                 //close(m_events[i].data.fd);
                 m_utils.RemovedFd(Utils::m_epollfd, m_events[i].data.fd);
@@ -92,11 +93,11 @@ void Webserver::LoopEvent()
             }
 
             //客户端读事件
-            else if(m_events[i].events && EPOLLIN){
+            else if(m_events[i].events & EPOLLIN){
                 DealWithRead(sockfd);
             }
 
-            else if(m_events[i].events && EPOLLOUT){
+            else if(m_events[i].events & EPOLLOUT){
                 DealWithWrite(sockfd);
             }
         }
@@ -104,14 +105,15 @@ void Webserver::LoopEvent()
 }
 
 bool Webserver::DealClientData(){
+    printf("new connect\n");
     struct sockaddr_in client_address;
     socklen_t client_address_length = sizeof(client_address);
-
     //非阻塞listenfd,连续处理完所有客户端连接事件
     while(1){
         int connfd = accept(listenfd, (struct sockaddr*)&client_address, &client_address_length);
-
-        if(connfd < 0){
+        printf("connfd:%d\n", connfd);
+        if (connfd < 0)
+        {
             printf("accept failure and the errno is %d\n", errno);
             return false;
         }
@@ -135,11 +137,11 @@ void Webserver::DealWithRead(int sockfd){
         if(1 == users[sockfd].event_finish){
 
             //TODO 长连接和短链接判断
-
             users[sockfd].event_finish = 0;
             break;
         }
     }
+    
 }
 
 void Webserver::DealWithWrite(int sockfd){

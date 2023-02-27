@@ -1,4 +1,4 @@
-#include<utils.h>
+#include "utils.h"
 
 int* Utils::m_pipefd = nullptr;
 int Utils::m_epollfd = -1;
@@ -39,4 +39,24 @@ void Utils::ModFd(int epollfd, int fd, int ev){
     event.data.fd = fd;
     event.events = ev | EPOLLET | EPOLLONESHOT | EPOLLRDHUP;
     epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &event);
+}
+
+void Utils::SigHandler(int sig) {
+    //为保证函数的可重入性，保留原来的errno
+    int save_errno = errno;
+    int msg = sig;
+    send(Utils::m_pipefd[1], (char *)&msg, 1, 0);
+    errno = save_errno;
+}
+
+/*
+AddSig(int sig, void(handler)(int))
+    向内核注册信号及其信号处理函数
+*/
+void Utils::AddSig(int sig, void(handler)(int)) {
+    struct sigaction sa;
+    bzero(&sa, sizeof(sig));
+    sa.sa_handler = handler;
+    sigfillset(&sa.sa_mask);
+    assert(sigaction(sig, &sa, NULL) != -1);
 }

@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
     server.ListenEvents();
 
     //事件循环
+    server.LoopEvent();
 
     return 0;
 }
