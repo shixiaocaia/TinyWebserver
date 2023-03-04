@@ -84,10 +84,8 @@ bool ThreadPool<T>::Append(T *request, int event)
     // 操作工作队列时一定要加锁，因为它被所有线程共享。
     m_queuelocker.lock();
 
-    // Problem: 读写事件类型的标注
-
     // 判定是否超过请求队列的最大数
-    if(m_workqueue.size() > m_max_requests)
+    if(m_workqueue.size() > (unsigned)m_max_requests)
     {
         m_queuelocker.unlock();
         return false;

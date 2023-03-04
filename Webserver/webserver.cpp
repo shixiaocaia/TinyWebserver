@@ -87,9 +87,10 @@ void Webserver::LoopEvent()
             else if(m_events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)){
                 //epoll_ctl(Utils::m_epollfd, EPOLL_CTL_DEL, m_events[i].data.fd, 0);
                 //close(m_events[i].data.fd);
-                m_utils.RemovedFd(Utils::m_epollfd, m_events[i].data.fd);
+                printf("监听到sockfd - %d 异常事件, 客户端关闭连接, ", m_events[i].data.fd);
+                m_utils.RemovedFd(m_epollfd, m_events[i].data.fd);
                 HttpConn::m_user_count--;
-                printf("监听到异常事件, 客户端关闭连接, errno = %d\n", errno);
+                printf("errno = %d\n", errno);
             }
 
             //客户端读事件

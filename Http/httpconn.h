@@ -101,6 +101,18 @@ public:
     HTTP_CODE ParseContent(char* text);
     HTTP_CODE DoRequest();
 
+    void UnMap();
+
+    bool AddResponse(const char* format, ...);
+    bool AddStatueLine(int status, const char *title);
+    bool AddHeaders(int content_len);
+    bool AddLinger();
+    bool AddContentType();
+    bool AddBlankLine();
+    bool AddContent(const char *content);
+    bool AddContentLength(int content_len);
+
+
 public:
     int m_sockfd;                                 //客户端socket
     struct sockaddr_in m_address;                 //客户端网络地址
@@ -123,7 +135,7 @@ private:
 
     //解析请求报文中对应的变量
     char m_read_file[FILENAME_LEN]; 
-    char *m_doc_root;                   //请求文件的根目录
+    char const *m_doc_root;                   //请求文件的根目录
     char *m_url;                        //请求URL
     char *m_version;                    //http版本
     char *m_host;                       //对方IP
@@ -137,7 +149,7 @@ private:
     METHOD m_method;           //请求方法
 
     struct stat m_file_stat;   //文件属性
-    char *file_address;      //内存映射区 
+    char *m_file_address;      //内存映射区 
 
     struct iovec m_iv_[2];      //io向量机制iovec
     int m_iv_count;            //发送部分数
