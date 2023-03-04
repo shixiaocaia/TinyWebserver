@@ -20,4 +20,4 @@ Http.o: ./Http/httpconn.cpp
 #	$(CC) $(CFLAGS) -c ./Timer/Timer.cpp
 
 clean:
-	rm -f *.o  
+	rm *.o -f  
