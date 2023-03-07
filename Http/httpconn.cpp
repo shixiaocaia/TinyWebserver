@@ -258,7 +258,6 @@ HttpConn::HTTP_CODE HttpConn::ParseRequestLine(char* text){
     //m_url此时跳过了第一个空格或\t字符，但不知道之后是否还有
     //将m_url向后偏移，通过查找，继续跳过空格和\t字符，指向请求资源的第一个字符   
     m_url += strspn(m_url, " \t");
-
     m_version = strpbrk(m_url, " \t");
     if (!m_version)
         return BAD_REQUEST;
@@ -269,7 +268,6 @@ HttpConn::HTTP_CODE HttpConn::ParseRequestLine(char* text){
     //仅支持HTTP1.1
     if (strcasecmp(m_version, "HTTP/1.1") != 0)
     {
-        //printf("error: %s\n", m_version);
         return BAD_REQUEST;
     }
     if (strncasecmp(m_version, "HTTP://", 7) == 0)
@@ -361,23 +359,23 @@ bool HttpConn::ProcessWrite(HTTP_CODE ret)
 {
     switch (ret)
     {
-        // //内部错误，500
-        // case INTERNAL_ERROR:
-        // {
-        //     AddStatueLine(200, error_500_title);
-        //     AddHeaders(strlen(error_500_form));
-        //     if (!AddContent(error_500_form))
-        //         return false;
-        //     break;
-        // }
-        // case BAD_REQUEST:
-        // {
-        //     AddStatueLine(404, error_400_title);
-        //     AddHeaders(strlen(error_400_form));
-        //     if (!AddContent(error_400_form))
-        //         return false;
-        //     break;
-        // }
+        //内部错误，500
+        case INTERNAL_ERROR:
+        {
+            AddStatueLine(200, error_500_title);
+            AddHeaders(strlen(error_500_form));
+            if (!AddContent(error_500_form))
+                return false;
+            break;
+        }
+        case BAD_REQUEST:
+        {
+            AddStatueLine(404, error_400_title);
+            AddHeaders(strlen(error_400_form));
+            if (!AddContent(error_400_form))
+                return false;
+            break;
+        }
         //文件存在:200
         case FILE_REQUEST:
         {
@@ -386,7 +384,7 @@ bool HttpConn::ProcessWrite(HTTP_CODE ret)
             if (m_file_stat.st_size != 0)
             {
                 AddHeaders(m_file_stat.st_size);
-                // 第一个iovec指针指向响应报文缓冲区，长度指向write_idx——
+                // 第一个iovec指针指向响应报文缓冲区，长度指向write_idx
                 m_iv_[0].iov_base = m_write_buf;
                 m_iv_[0].iov_len = m_write_idx;
                 // 第二个iovec指针指向mmap返回的文件指针，长度指向文件大小
@@ -397,13 +395,13 @@ bool HttpConn::ProcessWrite(HTTP_CODE ret)
                 m_bytes_to_send = m_write_idx + m_file_stat.st_size;
                 return true;
             }
-            // else {
-            //     //如果请求的资源大小为0，则返回空白html文件
-            //     const char *ok_string = "<html><body></body></html>";
-            //     AddHeaders(strlen(ok_string));
-            //     if (!AddContent(ok_string))
-            //         return false;            
-            // }
+            else {
+                //如果请求的资源大小为0，则返回空白html文件
+                const char *ok_string = "<html><body></body></html>";
+                AddHeaders(strlen(ok_string));
+                if (!AddContent(ok_string))
+                    return false;            
+            }
         }
         default:
             return false;
@@ -430,8 +428,10 @@ bool HttpConn::AddResponse(const char* format, ...)
 
     va_list arg_list;
 
+    //初始化，第二个参数为最后一个确定的形参
     va_start(arg_list, format);
 
+    //将数据写入缓冲区中，并返回写入的长度
     int len = vsnprintf(m_write_buf + m_write_idx, WRITE_BUFFER_SIZE - 1 - m_write_idx, format, arg_list);
 
     if(len >= (WRITE_BUFFER_SIZE - 1 - m_write_idx))
@@ -442,6 +442,7 @@ bool HttpConn::AddResponse(const char* format, ...)
 
     m_write_idx += len;
 
+    //清理工作
     va_end(arg_list);
     return true;
 }
@@ -469,6 +470,9 @@ bool HttpConn::AddBlankLine()
     return AddResponse("%s", "\r\n");
 }
 
+bool HttpConn::AddContent(const char *content){
+    return AddResponse("%s", content);
+}
 
 void HttpConn::Init()
 {       
