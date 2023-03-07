@@ -169,7 +169,8 @@ HttpConn::HTTP_CODE HttpConn::ProcessRead(){
             {
                 ret = ParseRequestLine(text);
                 if(ret == BAD_REQUEST){
-                    return BAD_REQUEST;
+                printf("1\n");
+                return BAD_REQUEST;
                 }
                 break;
             }
@@ -178,7 +179,8 @@ HttpConn::HTTP_CODE HttpConn::ProcessRead(){
             {
                 ret = ParseHeader(text);
                 if(ret == BAD_REQUEST){
-                    return BAD_REQUEST;
+                printf("2\n");
+                return BAD_REQUEST;
                 }
                 else if(ret == GET_REQUEST){
                     return DoRequest();
@@ -239,8 +241,11 @@ HttpConn::LINE_STATE HttpConn::ParseLine()
 HttpConn::HTTP_CODE HttpConn::ParseRequestLine(char* text){
     m_url = strpbrk(text, " \t");
 
-    if(!m_url)
+    if(!m_url){
+        printf("1_1\n");
         return BAD_REQUEST;
+    }
+       
 
     *m_url++ = '\0';
 
@@ -252,6 +257,7 @@ HttpConn::HTTP_CODE HttpConn::ParseRequestLine(char* text){
         m_method = POST;
     }
     else{
+        printf("1_2\n");
         return BAD_REQUEST;
     }
 
@@ -259,8 +265,11 @@ HttpConn::HTTP_CODE HttpConn::ParseRequestLine(char* text){
     //将m_url向后偏移，通过查找，继续跳过空格和\t字符，指向请求资源的第一个字符   
     m_url += strspn(m_url, " \t");
     m_version = strpbrk(m_url, " \t");
-    if (!m_version)
+    if (!m_version){
+        printf("1_3\n");
         return BAD_REQUEST;
+    }
+        
     *m_version++ = '\0';
     //去除前置空格
     m_version += strspn(m_version, " \t");
@@ -268,6 +277,7 @@ HttpConn::HTTP_CODE HttpConn::ParseRequestLine(char* text){
     //仅支持HTTP1.1
     if (strcasecmp(m_version, "HTTP/1.1") != 0)
     {
+        printf("1_4 %s\n",m_version);
         return BAD_REQUEST;
     }
     if (strncasecmp(m_version, "HTTP://", 7) == 0)
@@ -276,6 +286,7 @@ HttpConn::HTTP_CODE HttpConn::ParseRequestLine(char* text){
         m_url = strchr(m_url, '/');
     }
     if(!m_url || m_url[0] != '/'){
+        printf("1_5\n");
         return BAD_REQUEST;
     }
     m_check_state = CHECK_STATE_HEADER;

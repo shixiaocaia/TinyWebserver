@@ -77,7 +77,7 @@ void Webserver::LoopEvent()
 
             //listenfd监听到新的客户端申请
             if(sockfd == listenfd){
-                
+           
                 bool flag = DealClientData();
                 if(false == flag)
                     continue;
@@ -87,18 +87,20 @@ void Webserver::LoopEvent()
             else if(m_events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)){
                 //epoll_ctl(Utils::m_epollfd, EPOLL_CTL_DEL, m_events[i].data.fd, 0);
                 //close(m_events[i].data.fd);
-                printf("监听到sockfd - %d 异常事件, 客户端关闭连接, ", m_events[i].data.fd);
-                m_utils.RemovedFd(m_epollfd, m_events[i].data.fd);
+                printf("监听到 sockfd %d 发生异常事件, 客户端关闭连接\n", m_events[i].data.fd);
+                m_utils.RemovedFd(m_epollfd, sockfd);
+                sockfd = -1;
                 HttpConn::m_user_count--;
-                printf("errno = %d\n", errno);
             }
 
             //客户端读事件
             else if(m_events[i].events & EPOLLIN){
+                //printf("监听到读事件\n");
                 DealWithRead(sockfd);
             }
 
             else if(m_events[i].events & EPOLLOUT){
+                //printf("监听到写事件\n");
                 DealWithWrite(sockfd);
             }
         }
@@ -106,13 +108,11 @@ void Webserver::LoopEvent()
 }
 
 bool Webserver::DealClientData(){
-    printf("new connect\n");
     struct sockaddr_in client_address;
     socklen_t client_address_length = sizeof(client_address);
     //非阻塞listenfd,连续处理完所有客户端连接事件
     while(1){
         int connfd = accept(listenfd, (struct sockaddr*)&client_address, &client_address_length);
-        printf("connfd:%d\n", connfd);
         if (connfd < 0)
         {
             printf("accept failure and the errno is %d\n", errno);
@@ -124,6 +124,7 @@ bool Webserver::DealClientData(){
             return false;
         }
         else{
+            printf("新连接加入 %d\n", connfd);
             users[connfd].Init(connfd, client_address);
             return true;
         }
@@ -134,7 +135,8 @@ void Webserver::DealWithRead(int sockfd){
     //TODO 定时器
 
     m_thread_pool->Append(&users[sockfd], 0);
-    while(true){
+    while(true)
+    {
         if(1 == users[sockfd].event_finish){
 
             //TODO 长连接和短链接判断
@@ -151,8 +153,12 @@ void Webserver::DealWithWrite(int sockfd){
         if(1 == users[sockfd].event_finish){
 
             //TODO 长连接和短链接判断
-
+            //Problem 
+            m_utils.RemovedFd(m_epollfd, sockfd);
+            sockfd = -1;
+            HttpConn::m_user_count--;
             users[sockfd].event_finish = 0;
+            printf("响应完关闭一次\n");
             break;
         }
     }
